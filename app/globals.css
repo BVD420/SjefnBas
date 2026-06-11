@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+:root {
+  --ea-navy: #0a2540;
+  --ea-blue: #1a4d8f;
+  --ea-gold: #c9a227;
+  --ea-surface: #f8fafc;
+  --ea-muted: #64748b;
+}
+
+body {
+  background: var(--ea-surface);
+  color: #0f172a;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
