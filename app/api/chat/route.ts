@@ -1,4 +1,6 @@
 import OpenAI from "openai";
+import { getBookingRef } from "@/lib/auth";
+import { formatBookingContext, getBookingByRef } from "@/lib/bookings";
 import { sql } from "@/lib/db";
 import type { SourceRef } from "@/lib/types";
 import { embedQuery } from "@/lib/voyage";
@@ -15,7 +17,10 @@ type RetrievedChunk = {
   doc_type: "policy" | "live";
 };
 
-function buildSystemPrompt(chunks: RetrievedChunk[]): string {
+function buildSystemPrompt(
+  chunks: RetrievedChunk[],
+  passengerContext?: string
+): string {
   const context = chunks
     .map(
       (chunk, index) =>
@@ -33,7 +38,7 @@ Rules:
 - Be concise, accurate, and helpful.
 - Mention relevant policy details such as time limits, fees, and eligibility when they appear in the context.
 - Do not invent bereavement policies, refund rules, or compensation amounts that are not in the context.
-
+${passengerContext ? `\nPassenger booking details (use to personalize, but policy answers must still come from context):\n${passengerContext}\n` : ""}
 Context:
 ${context}`;
 }
@@ -74,7 +79,15 @@ export async function POST(request: Request) {
     }
 
     const sources = uniqueSources(chunks);
-    const system = buildSystemPrompt(chunks);
+
+    let passengerContext: string | undefined;
+    const bookingRef = await getBookingRef();
+    if (bookingRef) {
+      const booking = await getBookingByRef(bookingRef);
+      if (booking) passengerContext = formatBookingContext(booking);
+    }
+
+    const system = buildSystemPrompt(chunks, passengerContext);
 
     const stream = await getOpenAI().chat.completions.create({
       model: "gpt-4o-mini",

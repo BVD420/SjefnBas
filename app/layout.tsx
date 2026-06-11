@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { AppProvider } from "@/components/AppProvider";
+import { BookingProvider } from "@/components/BookingProvider";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -21,7 +22,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${jakarta.variable} antialiased`}>
-        <AppProvider>{children}</AppProvider>
+        <AppProvider>
+          <BookingProvider>{children}</BookingProvider>
+        </AppProvider>
       </body>
     </html>
   );

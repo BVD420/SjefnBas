@@ -7,8 +7,10 @@ import { CompareTab } from "./CompareTab";
 import { FlowDiagram } from "./FlowDiagram";
 import { HelpCenter } from "./HelpCenter";
 import { Hero } from "./Hero";
+import { BookingLoginLink } from "./TripBanner";
 import { LanguageToggle } from "./LanguageToggle";
 import { ThemeToggle } from "./ThemeToggle";
+import { TripBanner } from "./TripBanner";
 
 type Tab = "help" | "flow" | "compare";
 
@@ -53,11 +55,14 @@ export function AppShell() {
           </nav>
 
           <div className="flex items-center gap-2">
+            <BookingLoginLink />
             <LanguageToggle />
             <ThemeToggle />
           </div>
         </div>
       </header>
+
+      <TripBanner />
 
       {tab === "help" && <Hero />}
 
