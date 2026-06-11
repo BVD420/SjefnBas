@@ -1,0 +1,2 @@
+# SjefnBas
+RAG LLM practice
