@@ -21,6 +21,30 @@ export async function POST(request: Request) {
   }
 
   try {
+    const contentType = request.headers.get("content-type") ?? "";
+
+    if (contentType.includes("application/json")) {
+      const body = (await request.json()) as {
+        source?: string;
+        text?: string;
+        docType?: DocType;
+      };
+
+      const source = body.source?.trim().replace(/\s+/g, "_").toLowerCase();
+      const text = body.text?.trim();
+      const docType = body.docType ?? "policy";
+
+      if (!source || !text) {
+        return NextResponse.json(
+          { error: "Source name and text are required" },
+          { status: 400 }
+        );
+      }
+
+      const chunks = await ingestDocument(source, text, docType, true);
+      return NextResponse.json({ source, chunks, doc_type: docType });
+    }
+
     const form = await request.formData();
     const file = form.get("file");
     const docType = (form.get("docType") as DocType) || "policy";
@@ -36,7 +60,6 @@ export async function POST(request: Request) {
     }
 
     const chunks = await ingestDocument(source, text, docType, true);
-
     return NextResponse.json({ source, chunks, doc_type: docType });
   } catch (error) {
     console.error("Upload error:", error);
