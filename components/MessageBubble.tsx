@@ -1,9 +1,10 @@
 import { SourceChips } from "./SourceChips";
+import type { SourceRef } from "@/lib/types";
 
 type MessageBubbleProps = {
   role: "user" | "assistant";
   content: string;
-  sources?: string[];
+  sources?: SourceRef[];
   isStreaming?: boolean;
 };
 
@@ -18,19 +19,29 @@ export function MessageBubble({
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
       <div
-        className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-          isUser
-            ? "bg-[#1a4d8f] text-white"
-            : "border border-slate-200 bg-white text-slate-800 shadow-sm"
+        className={`max-w-[92%] px-1 py-1 text-sm leading-relaxed ${
+          isUser ? "text-right" : "text-left"
         }`}
       >
-        <p className="whitespace-pre-wrap">
-          {content}
-          {isStreaming && (
-            <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-[#1a4d8f]" />
-          )}
-        </p>
-        {!isUser && <SourceChips sources={sources} />}
+        <div
+          className={`inline-block rounded-2xl px-4 py-3 text-left ${
+            isUser
+              ? "bg-[var(--ea-primary)] text-white"
+              : "bg-[var(--ea-surface)] text-[var(--ea-text)] ring-1 ring-[var(--ea-border)]"
+          }`}
+        >
+          <p className="whitespace-pre-wrap">
+            {content}
+            {isStreaming && !content && (
+              <span className="text-[var(--ea-text-muted)]">...</span>
+            )}
+          </p>
+        </div>
+        {!isUser && sources.length > 0 && (
+          <div className="mt-1 max-w-full">
+            <SourceChips sources={sources} />
+          </div>
+        )}
       </div>
     </div>
   );

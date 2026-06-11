@@ -1,55 +1,70 @@
 "use client";
 
 import { useState } from "react";
-import { Chat } from "./Chat";
+import { useApp } from "./AppProvider";
+import { t } from "@/lib/i18n";
+import { CompareTab } from "./CompareTab";
 import { FlowDiagram } from "./FlowDiagram";
+import { HelpCenter } from "./HelpCenter";
+import { Hero } from "./Hero";
+import { LanguageToggle } from "./LanguageToggle";
+import { ThemeToggle } from "./ThemeToggle";
 
-type Tab = "chat" | "flow";
+type Tab = "help" | "flow" | "compare";
 
 export function AppShell() {
-  const [tab, setTab] = useState<Tab>("chat");
+  const { locale } = useApp();
+  const [tab, setTab] = useState<Tab>("help");
+
+  const tabs: { id: Tab; labelKey: "navHelp" | "navHow" | "navCompare" }[] = [
+    { id: "help", labelKey: "navHelp" },
+    { id: "flow", labelKey: "navHow" },
+    { id: "compare", labelKey: "navCompare" },
+  ];
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#f8fafc]">
-      <header className="border-b border-slate-200 bg-[#0a2540] text-white">
-        <div className="mx-auto max-w-2xl px-4 py-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#c9a227]">
-            Erasmus Airways
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold">Customer Support</h1>
-          <p className="mt-1 text-sm text-slate-300">
-            Your questions, our policies — answers grounded in official documents.
-          </p>
+    <div className="min-h-screen bg-[var(--ea-surface)]">
+      <header className="sticky top-0 z-50 border-b border-[var(--ea-border)] bg-[var(--ea-card)]/95 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--ea-primary)] text-sm font-bold text-white">
+              EA
+            </div>
+            <span className="hidden font-semibold text-[var(--ea-primary-dark)] sm:inline dark:text-[var(--ea-text)]">
+              {t(locale, "brand")}
+            </span>
+          </div>
 
-          <nav className="mt-4 flex gap-1 rounded-xl bg-white/10 p-1">
-            <button
-              type="button"
-              onClick={() => setTab("chat")}
-              className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition ${
-                tab === "chat"
-                  ? "bg-white text-[#0a2540] shadow-sm"
-                  : "text-slate-300 hover:text-white"
-              }`}
-            >
-              Support Chat
-            </button>
-            <button
-              type="button"
-              onClick={() => setTab("flow")}
-              className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition ${
-                tab === "flow"
-                  ? "bg-white text-[#0a2540] shadow-sm"
-                  : "text-slate-300 hover:text-white"
-              }`}
-            >
-              How It Works
-            </button>
+          <nav className="flex gap-1">
+            {tabs.map(({ id, labelKey }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setTab(id)}
+                className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+                  tab === id
+                    ? "bg-[color-mix(in_srgb,var(--ea-primary)_12%,transparent)] text-[var(--ea-primary-dark)] dark:text-[var(--ea-primary)]"
+                    : "text-[var(--ea-text-muted)] hover:text-[var(--ea-text)]"
+                }`}
+              >
+                {t(locale, labelKey)}
+              </button>
+            ))}
           </nav>
+
+          <div className="flex items-center gap-2">
+            <LanguageToggle />
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-2xl flex-1">
-        {tab === "chat" ? <Chat /> : <FlowDiagram />}
+      {tab === "help" && <Hero />}
+
+      <main>
+        {tab === "help" && <HelpCenter />}
+        {tab === "flow" && <FlowDiagram />}
+        {tab === "compare" && <CompareTab />}
       </main>
     </div>
   );

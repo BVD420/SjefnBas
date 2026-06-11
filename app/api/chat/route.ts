@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { sql } from "@/lib/db";
+import type { SourceRef } from "@/lib/types";
 import { embedQuery } from "@/lib/voyage";
 
 function getOpenAI() {
@@ -11,13 +12,14 @@ function getOpenAI() {
 type RetrievedChunk = {
   source: string;
   content: string;
+  doc_type: "policy" | "live";
 };
 
 function buildSystemPrompt(chunks: RetrievedChunk[]): string {
   const context = chunks
     .map(
       (chunk, index) =>
-        `[Source ${index + 1}: ${chunk.source}]\n${chunk.content}`
+        `[Source ${index + 1}: ${chunk.source} (${chunk.doc_type === "live" ? "LIVE NOTICE" : "POLICY"})]\n${chunk.content}`
     )
     .join("\n\n---\n\n");
 
@@ -27,12 +29,24 @@ Answer the passenger's question using ONLY the context below. Do not use outside
 
 Rules:
 - If the context does not contain enough information, say clearly that you do not know and suggest contacting Erasmus Airways support.
+- If a live notice conflicts with a stable policy document, follow the live notice.
 - Be concise, accurate, and helpful.
 - Mention relevant policy details such as time limits, fees, and eligibility when they appear in the context.
 - Do not invent bereavement policies, refund rules, or compensation amounts that are not in the context.
 
 Context:
 ${context}`;
+}
+
+function uniqueSources(chunks: RetrievedChunk[]): SourceRef[] {
+  const seen = new Set<string>();
+  const sources: SourceRef[] = [];
+  for (const chunk of chunks) {
+    if (seen.has(chunk.source)) continue;
+    seen.add(chunk.source);
+    sources.push({ name: chunk.source, doc_type: chunk.doc_type });
+  }
+  return sources;
 }
 
 export async function POST(request: Request) {
@@ -46,7 +60,7 @@ export async function POST(request: Request) {
     const queryEmbedding = await embedQuery(question.trim());
 
     const chunks = await sql<RetrievedChunk[]>`
-      SELECT source, content
+      SELECT source, content, doc_type
       FROM chunks
       ORDER BY embedding <=> ${JSON.stringify(queryEmbedding)}::vector
       LIMIT 4
@@ -54,12 +68,12 @@ export async function POST(request: Request) {
 
     if (chunks.length === 0) {
       return new Response(
-        "No knowledge loaded yet. Please load airline documents first.",
+        "No knowledge loaded yet. Please try again in a moment.",
         { status: 400 }
       );
     }
 
-    const sources = [...new Set(chunks.map((chunk) => chunk.source))];
+    const sources = uniqueSources(chunks);
     const system = buildSystemPrompt(chunks);
 
     const stream = await getOpenAI().chat.completions.create({
@@ -76,7 +90,9 @@ export async function POST(request: Request) {
     const readable = new ReadableStream({
       async start(controller) {
         controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify({ type: "sources", sources })}\n\n`)
+          encoder.encode(
+            `data: ${JSON.stringify({ type: "sources", sources })}\n\n`
+          )
         );
 
         try {
